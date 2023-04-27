@@ -1,0 +1,8 @@
+{
+    "primary": "#7289DA",
+    "success": "#98fb98",
+    "pending": "#F7CB73",
+    "warning": "#f8d91c",
+    "canceled": "#7f7f7f",
+    "error": "#FF0000"
+}

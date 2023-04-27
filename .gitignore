@@ -1,0 +1,6 @@
+node_modules
+webstore.json
+package-lock.json
+.idea
+.env.prod
+.env.dev
