@@ -13,20 +13,17 @@ switch (environment) {
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
-const ownerId = process.env.OWNER_ID;
 
 const config = {
     prod: {
         token: token,
         clientId: clientId,
         guildId: guildId,
-        ownerId: ownerId
     },
     dev: {
         token: token,
         clientId: clientId,
         guildId: guildId,
-        ownerId: ownerId
     },
 };
 
