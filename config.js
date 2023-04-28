@@ -15,12 +15,6 @@ const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID;
 const ownerId = process.env.OWNER_ID;
 
-const crypto = {
-    btc: process.env.BTC,
-    eth: process.env.ETH,
-    ltc: process.env.LTC,
-};
-
 const config = {
     prod: {
         token: token,
@@ -29,9 +23,13 @@ const config = {
         ownerId: ownerId
     },
     dev: {
+        token: token,
+        clientId: clientId,
+        guildId: guildId,
+        ownerId: ownerId
     },
 };
 
 module.exports = {
-    config: config[environment],crypto:crypto
+    config: config[environment]
 };

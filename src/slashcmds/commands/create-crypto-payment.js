@@ -21,22 +21,21 @@ module.exports = {
     async execute(interaction) {
         const token = interaction.options.getString('token');
         const usdAmount = interaction.options.getNumber('usd_amount');
-        let address = null;
-        switch (token) {
-            case 'BTC':
-                address = config.crypto.btc;
-                break;
-            case 'ETH':
-                address = config.crypto.eth;
-                break;
-            case 'LTC':
-                address = config.crypto.ltc;
-                break;
+        let address = cryptoService.getCryptoAddress(token);
+
+        if(address == null){
+            const savedAddressEmbed = new EmbedBuilder()
+                .setColor(colors.error)
+                .setTitle(`${token} address is not set!`)
+            await interaction.reply({
+                embeds: [savedAddressEmbed],ephemeral:true
+            });
+            return;
         }
 
         const crypto = await cryptoService.getCryptoInfo(token);
 
-        if (crypto == null || address == null) return;
+        if (crypto == null) return;
 
         const cryptoPendingAmount = (usdAmount / crypto.currentValue).toFixed(8);
 

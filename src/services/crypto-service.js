@@ -11,7 +11,7 @@ try {
     localStorage = new LocalStorage(localStoragePath);
 } catch (e) {
     // If the file doesn't exist, create a new one
-    localStorage = new LocalStorage(localStoragePath, { create: true });
+    localStorage = new LocalStorage(localStoragePath, {create: true});
 }
 
 async function getCryptoInfo(symbol) {
@@ -31,6 +31,8 @@ async function getCryptoInfo(symbol) {
             longName = 'Litecoin';
             currentValue = await getLitecoinRate();
             break;
+        default:
+            return null;
     }
 
     const crypto = {
@@ -80,6 +82,7 @@ async function findBitcoinTransaction(paymentInfo) {
     return null;
 }
 
+
 async function findEthereumTransaction(paymentInfo) {
     const cryptoAmount = paymentInfo.value;
     const startTimeEpoch = paymentInfo.startPaymentCreationEpoch;
@@ -100,7 +103,7 @@ async function findEthereumTransaction(paymentInfo) {
 async function findLitecoinTransaction(paymentInfo) {
     const requiredAmount = paymentInfo.value;
     const startTimeEpoch = paymentInfo.startPaymentCreationEpoch;
-    const address = config.crypto.ltc;
+    const address = paymentInfo.address;
     const apiUrl = `https://api.blockcypher.com/v1/ltc/main/addrs/${address}`;
     const endTimeEpoch = getEndEpochTime(startTimeEpoch);
 
@@ -108,7 +111,7 @@ async function findLitecoinTransaction(paymentInfo) {
     const transactionsFound = await fetch(apiUrl).then(response => response.json()).then(data => {
         const unconfirmedTransactions = data.unconfirmed_txrefs;
         if (unconfirmedTransactions != null && unconfirmedTransactions.length > 0) {
-            const myTransactions = unconfirmedTransactions.filter(tx =>{
+            const myTransactions = unconfirmedTransactions.filter(tx => {
                 if (tx.received == null) return false;
                 const dateEpoch = Date.parse(tx.received) / 1000;
 
@@ -177,14 +180,14 @@ function getUnclaimedTransaction(transactionList, paymentInfo) {
         return ltcStoredTransactions.some(storedTx => storedTx.hash == transaction.hash && storedTx.id == paymentInfo.id);
     });
     if (transactionToUse != null) {
-        return { hash: transactionToUse.hash, confirmations: transactionToUse.confirmations };
+        return {hash: transactionToUse.hash, confirmations: transactionToUse.confirmations};
     }
 
 
     if (transactionToUse == null) {
         transactionToUse = transactionList.find(transaction => {
             if (ltcStoredTransactions.some(tx => tx.hash == transaction.hash) == false) {
-                ltcStoredTransactions.push({ id: paymentInfo.id, hash: transaction.hash });
+                ltcStoredTransactions.push({id: paymentInfo.id, hash: transaction.hash});
                 localStorage.setItem(storedTransactionsFileName, JSON.stringify(ltcStoredTransactions));
                 return true;
             }
@@ -192,7 +195,7 @@ function getUnclaimedTransaction(transactionList, paymentInfo) {
     }
     if (transactionToUse != null) {
         console.log('available not used transaction found');
-        return { hash: transactionToUse.hash, confirmations: transactionToUse.confirmations };
+        return {hash: transactionToUse.hash, confirmations: transactionToUse.confirmations};
     }
 
     // if (transactionToUse != null) {
@@ -201,6 +204,39 @@ function getUnclaimedTransaction(transactionList, paymentInfo) {
     return null;
 }
 
+function saveCryptoAddress(token, address) {
+    const fileName = 'cryptoAddresses';
+    const addressesFile = localStorage.getItem(fileName);
+
+    let cryptoAdressesObject = addressesFile ? JSON.parse(addressesFile) : null;
+
+    if (cryptoAdressesObject == null) {
+        cryptoAdressesObject =
+            {
+                [token]: address
+            }
+    } else {
+        cryptoAdressesObject[token] = address;
+    }
+    localStorage.setItem(fileName, JSON.stringify(cryptoAdressesObject));
+}
+
+function getCryptoAddress(token) {
+    const fileName = 'cryptoAddresses';
+    const addressesFile = localStorage.getItem(fileName);
+
+    let cryptoAdressesObject = addressesFile ? JSON.parse(addressesFile) : null;
+    if (cryptoAdressesObject == null) return null;
+    return cryptoAdressesObject[token];
+}
+
+function getCryptoAddresses() {
+    const fileName = 'cryptoAddresses';
+    const addressesFile = localStorage.getItem(fileName);
+
+    let cryptoAdressesObject = addressesFile ? JSON.parse(addressesFile) : null;
+    return cryptoAdressesObject;
+}
 
 function getEndEpochTime(startEpochTime) {
     return parseInt(startEpochTime) + (60 * 60) * waitHoursForPayment;
@@ -236,4 +272,7 @@ module.exports = {
     findBitcoinTransaction,
     findEthereumTransaction,
     findLitecoinTransaction,
+    saveCryptoAddress,
+    getCryptoAddress,
+    getCryptoAddresses
 };

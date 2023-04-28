@@ -1,5 +1,5 @@
 const crypto = require('../services/crypto-service');
-const { EmbedBuilder } = require('discord.js');
+const {EmbedBuilder} = require('discord.js');
 const colors = require('../../assets/colors.json');
 const time = require('../../util/time');
 const config = require('../../config');
@@ -9,6 +9,7 @@ const clickWaitingCollection = {};
 
 module.exports = {
     id: 'check-payment', execute: async (interaction, args) => {
+        try {
         const buttonId = args[0];
         const token = args[1];
         const longName = args[2];
@@ -44,11 +45,13 @@ module.exports = {
             currentConfirmations: null,
         };
 
+        paymentInfo.address = crypto.getCryptoAddress(token);
+        if (paymentInfo.address == null) return;
+
         let tx;
         await interaction.deferUpdate();
         switch (token) {
             case 'BTC':
-                paymentInfo.address = config.crypto.btc;
                 paymentInfo.requiredConfirmations = 1;
                 tx = await crypto.findBitcoinTransaction(paymentInfo);
                 if (tx != null) {
@@ -58,7 +61,6 @@ module.exports = {
                 }
                 break;
             case 'ETH':
-                paymentInfo.address = config.crypto.eth;
                 paymentInfo.requiredConfirmations = 20;
                 tx = await crypto.findEthereumTransaction(paymentInfo);
                 if (tx != null) {
@@ -68,7 +70,6 @@ module.exports = {
                 }
                 break;
             case 'LTC':
-                paymentInfo.address = config.crypto.ltc;
                 paymentInfo.requiredConfirmations = 3;
                 tx = await crypto.findLitecoinTransaction(paymentInfo);
                 if (tx != null) {
@@ -78,10 +79,9 @@ module.exports = {
                 }
                 break;
         }
-        try {
+
             await handlePayment(interaction, paymentInfo);
-        }
-        catch (err) {
+        } catch (err) {
             console.log(err);
         }
     },
@@ -90,18 +90,18 @@ module.exports = {
 async function handlePayment(interaction, paymentInfo) {
     let paymentConfirmed = false;
     const date = new Date();
-    const options = { timeZoneName: 'short' };
+    const options = {timeZoneName: 'short'};
     const dateString = date.toLocaleString('en-US', options);
 
     const cryptoPendingPaymentEmbed = new EmbedBuilder().setTitle('Payment processor').setColor(colors.pending).setDescription(paymentInfo.hash == null ? `Please send exact ${paymentInfo.token} amount to avoid delays.` : paymentInfo.transactionFoundLink).addFields({
         name: 'Method', value: paymentInfo.CryptoLongName, inline: true,
-    }, { name: paymentInfo.token, value: paymentInfo.value, inline: true }, {
+    }, {name: paymentInfo.token, value: paymentInfo.value, inline: true}, {
         name: 'USD', value: `$${paymentInfo.valueUSD}`, inline: true,
-    }).setFooter({ text: `Last updated ${dateString}` });
+    }).setFooter({text: `Last updated ${dateString}`});
 
     if (paymentInfo.hash == null) {
         cryptoPendingPaymentEmbed
-            .addFields({ name: 'Address', value: paymentInfo.address, inline: false }, {
+            .addFields({name: 'Address', value: paymentInfo.address, inline: false}, {
                 name: 'Status', value: 'Waiting for payment', inline: true,
             });
         await interaction.editReply({
@@ -113,23 +113,21 @@ async function handlePayment(interaction, paymentInfo) {
 
     if (paymentInfo.currentConfirmations == null) {
         cryptoPendingPaymentEmbed
-            .addFields({ name: 'Confirmations', value: `0/${paymentInfo.requiredConfirmations}`, inline: false }, {
+            .addFields({name: 'Confirmations', value: `0/${paymentInfo.requiredConfirmations}`, inline: false}, {
                 name: 'Status', value: 'Waiting for confirmations', inline: true,
             });
-    }
-    else if (paymentInfo.currentConfirmations < paymentInfo.requiredConfirmations) {
+    } else if (paymentInfo.currentConfirmations < paymentInfo.requiredConfirmations) {
         cryptoPendingPaymentEmbed.addFields({
             name: 'Confirmations',
             value: `${paymentInfo.currentConfirmations}/${paymentInfo.requiredConfirmations}`,
             inline: false,
-        }, { name: 'Status', value: 'Waiting for confirmations', inline: false });
-    }
-    else if (paymentInfo.currentConfirmations >= paymentInfo.requiredConfirmations) {
+        }, {name: 'Status', value: 'Waiting for confirmations', inline: false});
+    } else if (paymentInfo.currentConfirmations >= paymentInfo.requiredConfirmations) {
         cryptoPendingPaymentEmbed.setColor(colors.success).addFields({
             name: 'Confirmations',
             value: `${paymentInfo.requiredConfirmations}/${paymentInfo.requiredConfirmations}`,
             inline: false,
-        }, { name: 'Status', value: 'Completed', inline: false });
+        }, {name: 'Status', value: 'Completed', inline: false});
         paymentConfirmed = true;
     }
     if (cryptoPendingPaymentEmbed == null) return;
@@ -138,8 +136,7 @@ async function handlePayment(interaction, paymentInfo) {
         await interaction.editReply({
             embeds: [cryptoPendingPaymentEmbed], components: [],
         });
-    }
-    else {
+    } else {
         await interaction.editReply({
             embeds: [cryptoPendingPaymentEmbed],
         });
@@ -149,8 +146,7 @@ async function handlePayment(interaction, paymentInfo) {
 function secondsLeftToClick(buttonId, lastTimeClickedEpoch) {
     if (lastTimeClickedEpoch == null) {
         clickWaitingCollection[buttonId] = time.getEpochTimestamp();
-    }
-    else {
+    } else {
         const timeElapsed = time.getEpochTimestamp() - lastTimeClickedEpoch;
         if (timeElapsed < waitSecondsBetweenClicks) {
             return waitSecondsBetweenClicks - timeElapsed;

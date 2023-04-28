@@ -16,9 +16,3 @@ CLIENT_ID=
 GUILD_ID=
 
 OWNER_ID=
-
-BTC=
-
-ETH=
-
-LTC=

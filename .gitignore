@@ -4,3 +4,4 @@ package-lock.json
 .idea
 .env.prod
 .env.dev
+localStorage
