@@ -5,10 +5,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node .",
-    "production": "set NODE_ENV=prod&&npm start",
-    "development": "set NODE_ENV=dev&&npm start",
-    "deployCommandsProd": "set NODE_ENV=prod&&node src/slashcmds/deploy-commands.js",
-    "deployCommandsDev": "set NODE_ENV=dev&&node src/slashcmds/deploy-commands.js"
+    "production": "set NODE_ENV=production&&npm start",
+    "development": "set NODE_ENV=development&&npm start",
+    "deployCommands": "node src/slashcmds/deploy-commands.js"
   },
   "keywords": [],
   "author": "",

@@ -1,11 +1,11 @@
-version: '3'
+version: '3.8'
 
 services:
   bot:
     container_name: crypto-transactor-bot
+    env_file:
+      - ./.env
     build:
       context: .
-      dockerfile: Dockerfile
-    image: bot/crypto-transactor
-    environment:
-      NODE_ENV: dev
+      dockerfile: Dockerfile.dev
+    image: faustis1337/crypto-transactor:latest

@@ -1,32 +1,13 @@
 const dotenv = require('dotenv');
+dotenv.config({path: '.env'})
 const environment = process.env.NODE_ENV;
 
-switch (environment) {
-    case 'prod':
-        dotenv.config({ path: '.env.prod' });
-        break;
-    case 'dev':
-        dotenv.config({ path: '.env.dev' });
-        break;
-}
-
-const token = process.env.DISCORD_TOKEN;
-const clientId = process.env.CLIENT_ID;
-const guildId = process.env.GUILD_ID;
-
 const config = {
-    prod: {
-        token: token,
-        clientId: clientId,
-        guildId: guildId,
-    },
-    dev: {
-        token: token,
-        clientId: clientId,
-        guildId: guildId,
-    },
+    token: process.env.DISCORD_TOKEN,
+    clientId: process.env.CLIENT_ID,
+    guildId: process.env.GUILD_ID,
 };
 
 module.exports = {
-    config: config[environment]
+    config: config, environment: environment
 };
