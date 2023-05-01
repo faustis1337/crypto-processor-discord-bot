@@ -1,7 +1,8 @@
-const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
+const {SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder} = require('discord.js');
 const colors = require('../../../assets/colors.json');
 const cryptoService = require('../../../src/services/crypto-service');
 const config = require('../../../config');
+const time = require('../../../util/time')
 
 // 2 hours difference between Denmark, and 4 hours difference between GMT
 
@@ -13,7 +14,7 @@ module.exports = {
             .setName('token')
             .setDescription('Select token')
             .setRequired(true)
-            .addChoices({ name: 'BTC', value: 'BTC' }, { name: 'ETH', value: 'ETH' }, { name: 'LTC', value: 'LTC' }))
+            .addChoices({name: 'BTC', value: 'BTC'}, {name: 'ETH', value: 'ETH'}, {name: 'LTC', value: 'LTC'}))
         .addNumberOption((option) => option
             .setName('usd_amount')
             .setDescription('Enter amount value')
@@ -23,12 +24,12 @@ module.exports = {
         const usdAmount = interaction.options.getNumber('usd_amount');
         let address = cryptoService.getCryptoAddress(token);
 
-        if(address == null){
+        if (address == null) {
             const savedAddressEmbed = new EmbedBuilder()
                 .setColor(colors.error)
                 .setTitle(`${token} address is not set!`)
             await interaction.reply({
-                embeds: [savedAddressEmbed],ephemeral:true
+                embeds: [savedAddressEmbed], ephemeral: true
             });
             return;
         }
@@ -44,19 +45,17 @@ module.exports = {
             .setTitle('Payment processor')
             .setDescription(`Please send exact ${token} amount to avoid delays.`)
             .addFields(
-                { name: 'Method:', value: crypto.longName, inline: true },
-                { name: token, value: cryptoPendingAmount, inline: true },
-                { name: 'USD:', value: `$${usdAmount}`, inline: true },
-                { name: 'Address:', value: address, inline: false },
-                { name: 'Status:', value: `Waiting for payment...`, inline: false },
+                {name: 'Method:', value: crypto.longName, inline: true},
+                {name: token, value: cryptoPendingAmount, inline: true},
+                {name: 'USD:', value: `$${usdAmount}`, inline: true},
+                {name: 'Address:', value: address, inline: false},
+                {name: 'Status:', value: `Waiting for payment...`, inline: false},
             );
 
-        const date = new Date();
-        const denmarkTime = date.toLocaleString('en-US', { timeZone: 'Europe/Copenhagen' });
-        const epochTime = Date.parse(denmarkTime) / 1000;
+        const currentEpochUTC = time.getEpochTimestamp();
 
         const checkPaymentButton = new ButtonBuilder()
-            .setCustomId(`check-payment:${generateId()}:${token}:${crypto.longName}:${cryptoPendingAmount}:${usdAmount}:${epochTime}`)
+            .setCustomId(`check-payment:${generateId()}:${token}:${crypto.longName}:${cryptoPendingAmount}:${usdAmount}:${currentEpochUTC}`)
             .setLabel('Check status')
             .setStyle(ButtonStyle.Secondary);
 
@@ -69,6 +68,7 @@ module.exports = {
     },
 }
 ;
+
 function generateId() {
     let id = '';
     const digits = '0123456789';

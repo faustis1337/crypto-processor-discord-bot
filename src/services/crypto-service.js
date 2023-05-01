@@ -55,7 +55,7 @@ async function findBitcoinTransaction(paymentInfo) {
             const allPossibleTransactions = [];
             const transactions = data.filter(tx => tx.status.block_time >= startTimeEpoch && tx.status.block_time <= endTimeEpoch);
             for (let i = 0; i < transactions.length; i++) {
-                const myTransaction = transactions[i].vout.find(vout => vout.scriptpubkey_address === address && (vout.value / 100000000) == requiredAmount);
+                const myTransaction = transactions[i].vout.find(vout => vout.scriptpubkey_address == address && (vout.value / 100000000) == requiredAmount);
                 if (myTransaction != null) {
                     allPossibleTransactions.push({
                         hash: transactions[i].txid,
@@ -135,7 +135,6 @@ async function findLitecoinTransaction(paymentInfo) {
                 const isRequiredAmount = requiredAmount == (tx.value / 100000000);
                 const isCorrectInput = tx.tx_input_n == -1;
                 const isInTimeframe = (dateEpoch >= startTimeEpoch) && (dateEpoch <= endTimeEpoch);
-
 
                 return isRequiredAmount && isCorrectInput && isInTimeframe;
             });
