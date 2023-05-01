@@ -48,10 +48,26 @@ async function findBitcoinTransaction(paymentInfo) {
     const address = paymentInfo.address;
     const apiUrl = `https://blockstream.info/api/address/${address}/txs`;
     const endTimeEpoch = getEndEpochTime(startTimeEpoch);
+
+    const foundExistingTransactionHash = findStoredTransactionHash(paymentInfo.token, paymentInfo.id);
+    if (foundExistingTransactionHash) {
+        return fetch(apiUrl)
+            .then(response => response.json())
+            .then(txs => {
+                const tx = txs.find(tx => tx.txid == foundExistingTransactionHash);
+                if (tx != null) {
+                    return {
+                        hash: tx.txid,
+                        confirmations: tx.status.confirmed ? 1 : 0,
+                    }
+                }
+                return null;
+            });
+    }
+
     const allTransactions = await fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
-
             const allPossibleTransactions = [];
             const transactions = data.filter(tx => tx.status.block_time >= startTimeEpoch && tx.status.block_time <= endTimeEpoch);
             for (let i = 0; i < transactions.length; i++) {
@@ -89,10 +105,24 @@ async function findEthereumTransaction(paymentInfo) {
     const address = paymentInfo.address;
     const apiUrl = `https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=G3GC5UTPQ85ETUGW6X7QR85PD4W8BYM9VA`;
     const endTimeEpoch = getEndEpochTime(startTimeEpoch);
+
+    const foundExistingTransactionHash = findStoredTransactionHash(paymentInfo.token, paymentInfo.id);
+    if (foundExistingTransactionHash) {
+        return await fetch(apiUrl).then(response => response.json()).then(data => {
+            const tx = data.result.find(tx => tx.hash == foundExistingTransactionHash);
+            if (tx != null) {
+                return {
+                    hash: tx.hash,
+                    confirmations: tx.confirmations,
+                }
+            }
+            return null;
+        });
+    }
+
     const transactionList = await fetch(apiUrl).then(response => response.json()).then(data => {
         return data.result.filter(tx => tx.timeStamp >= startTimeEpoch && tx.timeStamp <= endTimeEpoch && Web3.utils.toWei(cryptoAmount, 'ether') == tx.value);
     });
-    console.log(transactionList);
     if (transactionList != null && transactionList.length > 0) {
         return getUnclaimedTransaction(transactionList, paymentInfo);
     }
@@ -107,6 +137,21 @@ async function findLitecoinTransaction(paymentInfo) {
     const apiUrl = `https://api.blockcypher.com/v1/ltc/main/addrs/${address}`;
     const endTimeEpoch = getEndEpochTime(startTimeEpoch);
 
+    const foundExistingTransactionHash = findStoredTransactionHash(paymentInfo.token, paymentInfo.id);
+    if(foundExistingTransactionHash!=null){
+        return await fetch(apiUrl).then(response => response.json()).then(data => {
+            const transactions = [].concat(data.txrefs,data.unconfirmed_txrefs);
+
+            const tx = transactions.find(tx => tx.tx_hash == foundExistingTransactionHash);
+            if(tx!=null){
+                return {
+                    hash: tx.tx_hash,
+                    confirmations: tx.confirmations,
+                }
+            }
+            return null;
+        });
+    }
 
     const transactionsFound = await fetch(apiUrl).then(response => response.json()).then(data => {
         const unconfirmedTransactions = data.unconfirmed_txrefs;
@@ -156,21 +201,24 @@ async function findLitecoinTransaction(paymentInfo) {
     return null;
 }
 
-function getUnclaimedTransaction(transactionList, paymentInfo) {
-    if (transactionList == null) return null;
-    let storedTransactionsFileName = null;
-    switch (paymentInfo.token) {
-        case 'BTC':
-            storedTransactionsFileName = 'btcTransactions';
-            break;
-        case 'ETH':
-            storedTransactionsFileName = 'ethTransactions';
-            break;
-        case 'LTC':
-            storedTransactionsFileName = 'ltcTransactions';
-            break;
-    }
+function findStoredTransactionHash(token, id) {
+    let storedTransactionsFileName = storedTransactionsFileNameFactory(token);
     if (storedTransactionsFileName == null) return null;
+
+    const storedItemList = localStorage.getItem(storedTransactionsFileName);
+    const storedTransactions = storedItemList ? JSON.parse(storedItemList) : [];
+
+    const transactionFound = storedTransactions.find(storedTx => storedTx.id == id);
+
+    return transactionFound?.hash || null;
+}
+
+
+function getUnclaimedTransaction(transactionList, paymentInfo) {
+    let storedTransactionsFileName = storedTransactionsFileNameFactory(paymentInfo.token);
+
+    if (transactionList == null || storedTransactionsFileName == null) return null;
+
     const storedItemList = localStorage.getItem(storedTransactionsFileName);
     const ltcStoredTransactions = storedItemList ? JSON.parse(storedItemList) : [];
 
@@ -201,6 +249,22 @@ function getUnclaimedTransaction(transactionList, paymentInfo) {
     // 	return { hash: transactionToUse.hash, confirmations: transactionToUse.confirmations };
     // };
     return null;
+}
+
+function storedTransactionsFileNameFactory(token) {
+    let storedTransactionsFileName = null;
+    switch (token) {
+        case 'BTC':
+            storedTransactionsFileName = 'btcTransactions';
+            break;
+        case 'ETH':
+            storedTransactionsFileName = 'ethTransactions';
+            break;
+        case 'LTC':
+            storedTransactionsFileName = 'ltcTransactions';
+            break;
+    }
+    return storedTransactionsFileName;
 }
 
 function saveCryptoAddress(token, address) {
