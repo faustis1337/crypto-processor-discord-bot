@@ -4,6 +4,7 @@ const LocalStorage = require('node-localstorage').LocalStorage;
 const localStoragePath = './localStorage';
 let localStorage;
 var Web3 = require('web3');
+const {all} = require("axios");
 
 const waitHoursForPayment = 24;
 
@@ -55,13 +56,7 @@ async function findBitcoinTransaction(paymentInfo) {
             .then(response => response.json())
             .then(txs => {
                 const tx = txs.find(tx => tx.txid == foundExistingTransactionHash);
-                if (tx != null) {
-                    return {
-                        hash: tx.txid,
-                        confirmations: tx.status.confirmed ? 1 : 0,
-                    }
-                }
-                return null;
+                return tx ? {hash: tx.txid, confirmations: tx.status.confirmed ? 1 : 0} : null;
             });
     }
 
@@ -83,11 +78,7 @@ async function findBitcoinTransaction(paymentInfo) {
 
             return allPossibleTransactions;
         });
-
-    if (allTransactions != null && allTransactions.length > 0) {
-        return getUnclaimedTransaction(allTransactions, paymentInfo);
-    }
-    return null;
+    return allTransactions?.length > 0 ? getUnclaimedTransaction(allTransactions, paymentInfo) : null;
 }
 
 
@@ -102,24 +93,15 @@ async function findEthereumTransaction(paymentInfo) {
     if (foundExistingTransactionHash) {
         return await fetch(apiUrl).then(response => response.json()).then(data => {
             const tx = data.result.find(tx => tx.hash == foundExistingTransactionHash);
-            if (tx != null) {
-                return {
-                    hash: tx.hash,
-                    confirmations: tx.confirmations,
-                }
-            }
-            return null;
+            return tx ? {hash: tx.hash, confirmations: tx.confirmations,} : null;
         });
     }
 
     const transactionList = await fetch(apiUrl).then(response => response.json()).then(data => {
         return data.result.filter(tx => tx.timeStamp >= startTimeEpoch && tx.timeStamp <= endTimeEpoch && Web3.utils.toWei(cryptoAmount, 'ether') == tx.value);
     });
-    if (transactionList != null && transactionList.length > 0) {
-        return getUnclaimedTransaction(transactionList, paymentInfo);
-    }
 
-    return null;
+    return transactionList?.length > 0 ? getUnclaimedTransaction(transactionList, paymentInfo) : null;
 }
 
 async function findLitecoinTransaction(paymentInfo) {
@@ -130,67 +112,27 @@ async function findLitecoinTransaction(paymentInfo) {
     const endTimeEpoch = getEndEpochTime(startTimeEpoch);
 
     const foundExistingTransactionHash = findStoredTransactionHash(paymentInfo.token, paymentInfo.id);
-    if(foundExistingTransactionHash!=null){
+    if (foundExistingTransactionHash != null) {
         return await fetch(apiUrl).then(response => response.json()).then(data => {
-            const transactions = [].concat(data.txrefs,data.unconfirmed_txrefs);
-
+            const transactions = [].concat(data.txrefs, data.unconfirmed_txrefs);
             const tx = transactions.find(tx => tx.tx_hash == foundExistingTransactionHash);
-            if(tx!=null){
-                return {
-                    hash: tx.tx_hash,
-                    confirmations: tx.confirmations,
-                }
-            }
-            return null;
+            return tx ? {hash: tx.tx_hash, confirmations: tx.confirmations} : null;
         });
     }
 
     const transactionsFound = await fetch(apiUrl).then(response => response.json()).then(data => {
-        const unconfirmedTransactions = data.unconfirmed_txrefs;
-        if (unconfirmedTransactions != null && unconfirmedTransactions.length > 0) {
-            const myTransactions = unconfirmedTransactions.filter(tx => {
-                if (tx.received == null) return false;
-                const dateEpoch = Date.parse(tx.received) / 1000;
+        let allTransactions = [...(data.unconfirmed_txrefs ?? []), ...(data.txrefs ?? [])];
 
-                const isRequiredAmount = requiredAmount == (tx.value / 100000000);
-                const isCorrectInput = tx.tx_input_n == -1;
-                const isInTimeframe = (dateEpoch >= startTimeEpoch) && (dateEpoch <= endTimeEpoch);
-
-                return isRequiredAmount && isCorrectInput && isInTimeframe;
-            });
-            if (myTransactions != null && myTransactions.length > 0) {
-                return myTransactions;
-            }
-        }
-        const confirmedTransactions = data.txrefs;
-        if (confirmedTransactions != null && confirmedTransactions.length > 0) {
-            const myTransactions = confirmedTransactions.filter(tx => {
-
-                if (tx.confirmed == null) return false;
-                const dateEpoch = Date.parse(tx.confirmed) / 1000;
-
-                const isRequiredAmount = requiredAmount == (tx.value / 100000000);
-                const isCorrectInput = tx.tx_input_n == -1;
-                const isInTimeframe = (dateEpoch >= startTimeEpoch) && (dateEpoch <= endTimeEpoch);
-
-                return isRequiredAmount && isCorrectInput && isInTimeframe;
-            });
-            if (myTransactions != null && myTransactions.length > 0) {
-                return myTransactions;
-            }
-        }
+        return allTransactions.filter(tx => {
+            const dateEpoch = Date.parse(tx.received ?? tx.confirmed) / 1000 || null;
+            return dateEpoch ? (requiredAmount == (tx.value / 100000000)) && (tx.tx_input_n == -1) && ((dateEpoch >= startTimeEpoch) && (dateEpoch <= endTimeEpoch)) : false;
+        }).map(transaction => ({
+            hash: transaction.tx_hash,
+            confirmations: transaction.confirmations,
+        }));
     });
-    if (transactionsFound != null) {
-        const remappedTransactions = transactionsFound.map(transaction => {
-            return {
-                hash: transaction.tx_hash,
-                confirmations: transaction.confirmations,
-            };
-        });
-        return getUnclaimedTransaction(remappedTransactions, paymentInfo);
-    }
 
-    return null;
+    return transactionsFound ? getUnclaimedTransaction(transactionsFound, paymentInfo) : null;
 }
 
 function findStoredTransactionHash(token, id) {
@@ -212,35 +154,24 @@ function getUnclaimedTransaction(transactionList, paymentInfo) {
     if (transactionList == null || storedTransactionsFileName == null) return null;
 
     const storedItemList = localStorage.getItem(storedTransactionsFileName);
-    const ltcStoredTransactions = storedItemList ? JSON.parse(storedItemList) : [];
+    const storedTransactions = storedItemList ? JSON.parse(storedItemList) : [];
 
     let transactionToUse;
     transactionToUse = transactionList.find(transaction => {
-        return ltcStoredTransactions.some(storedTx => storedTx.hash == transaction.hash && storedTx.id == paymentInfo.id);
+        return storedTransactions.some(storedTx => storedTx.hash == transaction.hash && storedTx.id == paymentInfo.id);
     });
-    if (transactionToUse != null) {
-        return {hash: transactionToUse.hash, confirmations: transactionToUse.confirmations};
-    }
-
 
     if (transactionToUse == null) {
         transactionToUse = transactionList.find(transaction => {
-            if (ltcStoredTransactions.some(tx => tx.hash == transaction.hash) == false) {
-                ltcStoredTransactions.push({id: paymentInfo.id, hash: transaction.hash});
-                localStorage.setItem(storedTransactionsFileName, JSON.stringify(ltcStoredTransactions));
+            if (storedTransactions.some(tx => tx.hash == transaction.hash) == false) {
+                storedTransactions.push({id: paymentInfo.id, hash: transaction.hash});
+                localStorage.setItem(storedTransactionsFileName, JSON.stringify(storedTransactions));
                 return true;
             }
         });
     }
-    if (transactionToUse != null) {
-        console.log('available not used transaction found');
-        return {hash: transactionToUse.hash, confirmations: transactionToUse.confirmations};
-    }
 
-    // if (transactionToUse != null) {
-    // 	return { hash: transactionToUse.hash, confirmations: transactionToUse.confirmations };
-    // };
-    return null;
+    return transactionToUse ? {hash: transactionToUse.hash, confirmations: transactionToUse.confirmations} : null;
 }
 
 function storedTransactionsFileNameFactory(token) {
