@@ -69,7 +69,8 @@ async function findBitcoinTransaction(paymentInfo) {
         .then(response => response.json())
         .then(data => {
             const allPossibleTransactions = [];
-            const transactions = data.filter(tx => tx.status.block_time >= startTimeEpoch && tx.status.block_time <= endTimeEpoch);
+
+            const transactions = data.filter(tx => (tx.status.block_time >= startTimeEpoch && tx.status.block_time <= endTimeEpoch) || tx.status.block_time == null);
             for (let i = 0; i < transactions.length; i++) {
                 const myTransaction = transactions[i].vout.find(vout => vout.scriptpubkey_address == address && (vout.value / 100000000) == requiredAmount);
                 if (myTransaction != null) {
@@ -80,18 +81,9 @@ async function findBitcoinTransaction(paymentInfo) {
                 }
             }
 
-            const unconfirmedTransactions = data.filter(tx => tx.status.block_time == null);
-            for (let i = 0; i < unconfirmedTransactions.length; i++) {
-                const myTransaction = unconfirmedTransactions[i].vout.find(vout => vout.scriptpubkey_address === address && (vout.value / 100000000) == requiredAmount);
-                if (myTransaction != null) {
-                    allPossibleTransactions.push({
-                        hash: unconfirmedTransactions[i].txid,
-                        confirmations: unconfirmedTransactions[i].status.confirmed ? 1 : 0,
-                    });
-                }
-            }
             return allPossibleTransactions;
         });
+
     if (allTransactions != null && allTransactions.length > 0) {
         return getUnclaimedTransaction(allTransactions, paymentInfo);
     }
