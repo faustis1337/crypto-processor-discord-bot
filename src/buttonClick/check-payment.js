@@ -138,7 +138,7 @@ async function handlePayment(interaction, paymentInfo) {
         });
     } else {
         await interaction.editReply({
-            embeds: [cryptoPendingPaymentEmbed],
+            embeds: [cryptoPendingPaymentEmbed],components:[interaction.message.components[0]]
         });
     }
 

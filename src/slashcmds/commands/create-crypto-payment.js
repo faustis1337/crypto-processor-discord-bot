@@ -59,11 +59,24 @@ module.exports = {
             .setLabel('Check status')
             .setStyle(ButtonStyle.Secondary);
 
+        const copyAddressButton = new ButtonBuilder()
+            .setCustomId(`copy-address:${token}`)
+            .setLabel('Copy address')
+            .setStyle(ButtonStyle.Secondary);
+
+        const copyAmountButton = new ButtonBuilder()
+            .setCustomId(`copy-amount:${cryptoPendingAmount}`)
+            .setLabel('Copy amount')
+            .setStyle(ButtonStyle.Secondary);
+
         const paymentButtonsRow = new ActionRowBuilder()
             .addComponents(checkPaymentButton);
 
+        const copyButtonsRow = new ActionRowBuilder()
+            .addComponents(copyAddressButton,copyAmountButton);
+
         await interaction.reply({
-            embeds: [cryptoPendingPaymentEmbed], components: [paymentButtonsRow],
+            embeds: [cryptoPendingPaymentEmbed], components: [paymentButtonsRow,copyButtonsRow],
         });
     },
 }
