@@ -26,7 +26,7 @@ module.exports = {
         const secondsLeft = secondsLeftToClick(buttonId, clickWaitingCollection[buttonId]);
         if (secondsLeft > 0) {
             await interaction.reply({
-                content: `You can click again in ${secondsLeft} seconds!`,
+                content: `You can click in ${secondsLeft} seconds!`,
                 ephemeral: true,
             });
             return;
@@ -141,6 +141,12 @@ async function handlePayment(interaction, paymentInfo) {
             embeds: [cryptoPendingPaymentEmbed],
         });
     }
+
+    await interaction.followUp({
+        content: `Status updated`,
+        ephemeral: true,
+    });
+
 }
 
 function secondsLeftToClick(buttonId, lastTimeClickedEpoch) {

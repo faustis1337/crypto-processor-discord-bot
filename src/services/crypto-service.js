@@ -65,7 +65,10 @@ async function findBitcoinTransaction(paymentInfo) {
         .then(data => {
             const allPossibleTransactions = [];
 
-            const transactions = data.filter(tx => (tx.status.block_time >= startTimeEpoch && tx.status.block_time <= endTimeEpoch) || tx.status.block_time == null);
+            const transactions = data.filter(tx => {
+                const timeOffset = 300;
+                return (tx.status.block_time + timeOffset >= startTimeEpoch && tx.status.block_time <= endTimeEpoch) || tx.status.block_time == null;
+            });
             for (let i = 0; i < transactions.length; i++) {
                 const myTransaction = transactions[i].vout.find(vout => vout.scriptpubkey_address == address && (vout.value / 100000000) == requiredAmount);
                 if (myTransaction != null) {
@@ -98,7 +101,12 @@ async function findEthereumTransaction(paymentInfo) {
     }
 
     const transactionList = await fetch(apiUrl).then(response => response.json()).then(data => {
-        return data.result.filter(tx => tx.timeStamp >= startTimeEpoch && tx.timeStamp <= endTimeEpoch && Web3.utils.toWei(cryptoAmount, 'ether') == tx.value);
+        return data.result.filter(tx => {
+            const timeOffset = 300;
+            const isTimeValid = (tx.timeStamp + timeOffset >= startTimeEpoch && tx.timeStamp <= endTimeEpoch);
+            const isAmountCorrect = Web3.utils.toWei(cryptoAmount, 'ether') == tx.value;
+            return isTimeValid && isAmountCorrect;
+        });
     });
 
     return transactionList?.length > 0 ? getUnclaimedTransaction(transactionList, paymentInfo) : null;
@@ -124,8 +132,15 @@ async function findLitecoinTransaction(paymentInfo) {
         let allTransactions = [...(data.unconfirmed_txrefs ?? []), ...(data.txrefs ?? [])];
 
         return allTransactions.filter(tx => {
-            const dateEpoch = Date.parse(tx.received ?? tx.confirmed) / 1000 || null;
-            return dateEpoch ? (requiredAmount == (tx.value / 100000000)) && (tx.tx_input_n == -1) && ((dateEpoch >= startTimeEpoch) && (dateEpoch <= endTimeEpoch)) : false;
+            const dateEpoch = (Date.parse(tx.received ?? tx.confirmed) / 1000) || null;
+            if (dateEpoch == null) return false;
+
+            const timeOffset = 300;
+            const isTimeValid = ((dateEpoch + timeOffset >= startTimeEpoch) && (dateEpoch <= endTimeEpoch));
+            const input = (tx.tx_input_n == -1);
+            const isAmountCorrect = (requiredAmount == (tx.value / 100000000));
+
+            return isTimeValid && input && isAmountCorrect;
         }).map(transaction => ({
             hash: transaction.tx_hash,
             confirmations: transaction.confirmations,
