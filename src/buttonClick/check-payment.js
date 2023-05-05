@@ -88,6 +88,7 @@ module.exports = {
 };
 
 async function handlePayment(interaction, paymentInfo) {
+
     let paymentConfirmed = false;
     const date = new Date();
     const options = {timeZoneName: 'short'};
@@ -137,13 +138,17 @@ async function handlePayment(interaction, paymentInfo) {
             embeds: [cryptoPendingPaymentEmbed], components: [],
         });
     } else {
+        const actionRow = interaction.message.components[0];
+        actionRow.components = actionRow.components.splice(0,1);
+        actionRow.components[0].data.label = 'Get Confirmations';
+
         await interaction.editReply({
-            embeds: [cryptoPendingPaymentEmbed],components:[interaction.message.components[0]]
+            embeds: [cryptoPendingPaymentEmbed],components:[actionRow]
         });
     }
 
     await interaction.followUp({
-        content: `Status updated`,
+        content: `Transaction status updated`,
         ephemeral: true,
     });
 

@@ -36,11 +36,10 @@ async function getCryptoInfo(symbol) {
             return null;
     }
 
-    const crypto = {
+    return {
         longName: longName,
         currentValue: currentValue,
     };
-    return crypto;
 }
 
 async function findBitcoinTransaction(paymentInfo) {
