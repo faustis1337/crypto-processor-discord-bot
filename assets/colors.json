@@ -4,5 +4,6 @@
     "pending": "#F7CB73",
     "warning": "#f8d91c",
     "canceled": "#7f7f7f",
-    "error": "#FF0000"
+    "error": "#FF0000",
+    "invisible": "36393F"
 }
