@@ -12,9 +12,12 @@ module.exports = {
         const usdAmount = args[1];
         const address = cryptoService.getCryptoAddress(token);
         const crypto = await cryptoService.getCryptoInfo(token);
+        const longName = crypto.longName;
+        const cryptoAmount = await crypto.getCurrentValue();
+        const image = await crypto.image;
 
         if (crypto != null) {
-            const response = await responseService.waitingPaymentResponse(token, crypto.longName, address, usdAmount, crypto.currentValue, interaction.message.id)
+            const response = await responseService.waitingPaymentResponse(token, image,longName, address, usdAmount, cryptoAmount, interaction.message.id)
 
             await interaction.deferUpdate();
             await interaction.editReply(response);

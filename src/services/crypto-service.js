@@ -17,20 +17,24 @@ try {
 
 async function getCryptoInfo(symbol) {
     let longName;
-    let currentValue;
+    let getCurrentValue;
+    let image;
 
     switch (symbol) {
         case 'BTC':
             longName = 'Bitcoin';
-            currentValue = await getBitcoinRate();
+            image = 'crypto_bitcoin.png';
+            getCurrentValue = getBitcoinRate;
             break;
         case 'ETH':
             longName = 'Ethereum';
-            currentValue = await getEthereumRate();
+            image = 'crypto_ethereum.png';
+            getCurrentValue = getEthereumRate;
             break;
         case 'LTC':
             longName = 'Litecoin';
-            currentValue = await getLitecoinRate();
+            image = 'crypto_litecoin.png';
+            getCurrentValue = getLitecoinRate;
             break;
         default:
             return null;
@@ -38,7 +42,8 @@ async function getCryptoInfo(symbol) {
 
     return {
         longName: longName,
-        currentValue: currentValue,
+        image:image,
+        getCurrentValue: getCurrentValue,
     };
 }
 

@@ -9,11 +9,11 @@ const config = {
 };
 
 const emojis = {
-    btc: '1103987332698357770',
-    eth: '1103987336410320916',
-    ltc: '1103987337630863447',
-    get_confirmations:'868599453081288746',
-    left_arrow:'1104076625315893371'
+    btc: process.env.EMOJI_BTC,
+    eth: process.env.EMOJI_ETH,
+    ltc: process.env.EMOJI_LTC,
+    get_confirmations:process.env.EMOJI_GET_CONFIRMATIONS,
+    left_arrow:process.env.EMOJI_LEFT_ARROW
 }
 
 module.exports = {
