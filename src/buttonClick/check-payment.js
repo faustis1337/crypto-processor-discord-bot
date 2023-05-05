@@ -99,7 +99,10 @@ async function handlePayment(interaction, paymentInfo) {
     }, {name: paymentInfo.token, value: paymentInfo.value, inline: true}, {
         name: 'USD', value: `$${paymentInfo.valueUSD}`, inline: true,
     }).setFooter({text: `Last updated ${dateString}`});
-
+    await interaction.followUp({
+        content: `Transaction status updated`,
+        ephemeral: true,
+    });
     if (paymentInfo.hash == null) {
         cryptoPendingPaymentEmbed
             .addFields({name: 'Address', value: paymentInfo.address, inline: false}, {
@@ -146,11 +149,6 @@ async function handlePayment(interaction, paymentInfo) {
             embeds: [cryptoPendingPaymentEmbed],components:[actionRow]
         });
     }
-
-    await interaction.followUp({
-        content: `Transaction status updated`,
-        ephemeral: true,
-    });
 
 }
 
