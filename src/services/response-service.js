@@ -70,12 +70,12 @@ async function waitingPaymentResponse(token, image, cryptoLongName, address, usd
     const cryptoPendingPaymentEmbed = new EmbedBuilder()
         .setColor(colors.pending)
         .setTitle('Payment processor')
-        .setDescription(`Please send exact ${token} amount to avoid delays.`)
+        .setDescription(`→ We **require** that you send the exact amount in **${token}**\n → **Do not send USD**, its used to estimate the value!\n`)
         .setThumbnail(`attachment://${image}`)
         .addFields(
-            {name: 'Method:', value: cryptoLongName, inline: true},
+            {name: 'Method', value: cryptoLongName, inline: true},
             {name: token, value: cryptoPendingAmount, inline: true},
-            {name: 'USD:', value: `$${usdAmount}`, inline: true},
+            {name: 'USD', value: `$${usdAmount}`, inline: true},
             {name: 'Address:', value: address, inline: false},
             {name: 'Status:', value: `Waiting for payment...`, inline: false},
         );
