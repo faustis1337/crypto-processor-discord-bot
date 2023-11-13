@@ -54,7 +54,7 @@ async function selectCryptosResponse(usdAmount) {
     };
 }
 
-async function waitingPaymentResponse(token, image, cryptoLongName, address, usdAmount, cryptoAmount, messageId) {
+async function waitingPaymentResponse(interaction,token, image, cryptoLongName, address, usdAmount, cryptoAmount, messageId) {
     if (address == null) {
         const savedAddressEmbed = new EmbedBuilder()
             .setColor(colors.error)

@@ -16,11 +16,11 @@ module.exports = {
         const cryptoAmount = await crypto.getCurrentValue();
         const image = await crypto.image;
 
-        if (crypto != null) {
-            const response = await responseService.waitingPaymentResponse(token, image,longName, address, usdAmount, cryptoAmount, interaction.message.id)
-
-            await interaction.deferUpdate();
-            await interaction.editReply(response);
-        }
+        if (token!==undefined) {
+            const response = await responseService.waitingPaymentResponse(interaction,token, image,longName, address, usdAmount, cryptoAmount, interaction.message.id)
+            if(address!=null){
+             await interaction.deferUpdate();
+             await interaction.editReply(response);
+        }}
     },
 };
